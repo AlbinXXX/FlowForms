@@ -1,31 +1,24 @@
-import { useState, useEffect } from 'react'
 import './App.css'
-import axios from "axios";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import Home from './Pages/Home';
+import NotFound from './Pages/NotFound';
 
-
-
+const AllRoutes  = () => {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
 function App() {
-  const [msg, setMsg] = useState(0)
-
-    const fetchApi = async () => {
-        try {
-            const response = await axios.get("http://localhost:8080/api");
-            console.log(response.data.message);
-            setMsg(response.data.message);
-        } catch (error) {
-            console.error(error);
-        }
-    }
-    useEffect(() => {
-        fetchApi();
-    }, []);
 
   return (
-    <>
-        <h1>
-            {msg}
-        </h1>
-    </>
+    <div className="App">
+      <AllRoutes />
+    </div>
   )
 }
 
