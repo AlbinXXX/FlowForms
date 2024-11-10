@@ -1,3 +1,5 @@
+// prisma/schema.prisma
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
@@ -8,44 +10,59 @@ generator client {
 }
 
 model User {
-  id              Int       @id @default(autoincrement())
+  id              Int          @id @default(autoincrement())
   name            String
-  email           String    @unique
+  email           String       @unique
   password        String?
-  googleId        String?   @unique // Optional, unique ID for Google-authenticated users
-  role            Role      @default(USER)
-  managedBy       User?     @relation("UserManager", fields: [managedById], references: [id])
+  googleId        String?      @unique
+  role            Role         @default(USER)
+  managedBy       User?        @relation("UserManager", fields: [managedById], references: [id])
   managedById     Int?
-  managedUsers    User[]    @relation("UserManager")
-  projects        Project[] @relation("ProjectUsers")
-  managedProjects Project[] @relation("ProjectManager") // User as project manager
-  forms           Form[]    @relation("UserForms") // Forms created by the user
-  sessions        Session[] // Relation to sessions
+  managedUsers    User[]       @relation("UserManager")
+  projects        Project[]    @relation("ProjectUsers")
+  managedProjects Project[]    @relation("ProjectManager")
+  forms           Form[]       @relation("UserForms")
+  submissions     Submission[]
+  sessions        Session[]
 
   @@index([googleId])
 }
 
 model Project {
-  id        Int      @id @default(autoincrement())
-  name      String
-  form      Form?    @relation("ProjectForm", fields: [formId], references: [id]) // One-to-one relation with Form
-  formId    Int?     @unique
-  users     User[]   @relation("ProjectUsers")
-  manager   User?    @relation("ProjectManager", fields: [managerId], references: [id]) // One-to-one relation with User (manager)
-  managerId Int?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          Int      @id @default(autoincrement())
+  name        String
+  description String? // Optional field for project description
+  users       User[]   @relation("ProjectUsers")
+  manager     User?    @relation("ProjectManager", fields: [managerId], references: [id])
+  managerId   Int?
+  forms       Form[]   @relation("ProjectForm") // Adjust according to your schema setup
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model Form {
-  id          Int      @id @default(autoincrement())
+  id          Int          @id @default(autoincrement())
   title       String
   description String?
-  project     Project? @relation("ProjectForm") // One-to-one relation with Project, no need for `fields` and `references` on both sides
-  user        User?    @relation("UserForms", fields: [userId], references: [id]) // Relation to User for forms created by the user
+  fields      Json? // Made optional
+  token       String?      @unique
+  project     Project?     @relation("ProjectForm", fields: [projectId], references: [id])
+  user        User?        @relation("UserForms", fields: [userId], references: [id])
   userId      Int?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  submissions Submission[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  projectId   Int?
+}
+
+model Submission {
+  id          Int      @id @default(autoincrement())
+  formId      Int
+  form        Form     @relation(fields: [formId], references: [id])
+  data        Json? // Store submission data as a JSON object
+  submittedAt DateTime @default(now())
+  User        User?    @relation(fields: [userId], references: [id])
+  userId      Int?
 }
 
 model Session {
@@ -56,7 +73,7 @@ model Session {
   userId Int?
 
   @@index([expire])
-  @@map("session") // Ensure Prisma maps this model to a lowercase table name
+  @@map("session")
 }
 
 enum Role {

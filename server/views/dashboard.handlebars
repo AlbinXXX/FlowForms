@@ -1,0 +1,76 @@
+<!-- views/dashboard.handlebars -->
+
+{{!-- This template uses the default 'main' layout --}}
+
+<h2>Welcome, {{user.name}}!</h2>
+
+<div class="mb-4">
+    <a href="/forms/create" class="btn btn-success">Create New Form</a>
+</div>
+
+<h3>Your Projects</h3>
+
+{{#if projects.length}}
+    <ul class="list-group mb-4">
+        {{#each projects}}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+                <div>
+                    <strong>{{this.name}}</strong>
+                    {{#if this.description}}
+                        <p class="mb-0">{{this.description}}</p>
+                    {{/if}}
+                </div>
+                <div>
+                    <a href="/forms/create?projectId={{this.id}}" class="btn btn-primary btn-sm">Add Form</a>
+                </div>
+            </li>
+        {{/each}}
+    </ul>
+{{else}}
+    <p>No projects found. Please add a project.</p>
+{{/if}}
+
+<h3>Add New Project</h3>
+<form action="/api/projects/add" method="POST">
+    <div class="mb-3">
+        <label for="name" class="form-label">Project Name</label>
+        <input type="text" class="form-control" id="name" name="name" required
+               placeholder="Enter project name">
+    </div>
+    <div class="mb-3">
+        <label for="description" class="form-label">Project Description</label>
+        <textarea class="form-control" id="description" name="description" rows="3"
+                  placeholder="Enter project description"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Add Project</button>
+</form>
+
+<h3 class="mt-5">Your Forms</h3>
+
+{{#if forms.length}}
+    <table class="table table-striped">
+        <thead>
+        <tr>
+            <th>Form Title</th>
+            <th>Project</th>
+            <th>Created At</th>
+            <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{#each forms}}
+            <tr>
+                <td>{{this.title}}</td>
+                <td>{{this.project.name}}</td>
+                <td>{{formatDate this.createdAt}}</td>
+                <td>
+                    <a href="/forms/{{this.id}}/submissions" class="btn btn-info btn-sm">View Submissions</a>
+                    <a href="/forms/{{this.id}}/embed" class="btn btn-secondary btn-sm" target="_blank">Embed Form</a>
+                </td>
+            </tr>
+        {{/each}}
+        </tbody>
+    </table>
+{{else}}
+    <p>No forms found. Please create a form.</p>
+{{/if}}

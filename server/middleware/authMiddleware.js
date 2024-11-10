@@ -4,7 +4,6 @@ function ensureAuthenticated(req, res, next) {
     }
     res.status(401).json({ message: 'Unauthorized' }); // Send JSON response for unauthorized access
 }
-
 // Middleware to define unprotected routes
 function publicRoute(req, res, next) {
     const publicRoutes = ['/auth/login', '/auth/signup', '/auth/google', '/auth/google/callback'];

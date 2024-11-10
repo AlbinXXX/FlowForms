@@ -1,195 +1,284 @@
+// routes/formRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const formController = require('../controllers/formController');
+const { ensureAuthenticated } = require('../middleware/authMiddleware');
 
 /**
  * @swagger
- * tags:
- *   - name: Forms
- *     description: API for managing forms
- */
-
-/**
- * @swagger
- * /forms:
+ * /api/forms:
  *   post:
- *     summary: Create a new form
- *     tags: [Forms]
+ *     summary: Create a new form associated with a project
+ *     description: Create a new form associated with a project
+ *     tags:
+ *       - Forms
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
+ *       description: Form data
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *                 description: The title of the form
- *               description:
- *                 type: string
- *                 description: The description of the form
- *               projectId:
- *                 type: integer
- *                 description: The ID of the associated project
- *               userId:
- *                 type: integer
- *                 description: The ID of the user who created the form
+ *             $ref: '#/components/schemas/FormInput'
  *     responses:
- *       201:
+ *       '201':
  *         description: Form created successfully
- *       400:
- *         description: This project already has a form associated with it
- *       500:
- *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Form'
+ *       '400':
+ *         description: Bad Request
+ *       '401':
+ *         description: Unauthorized
+ *       '500':
+ *         description: Internal Server Error
  */
-router.post('/', formController.createForm);
+router.post('/', ensureAuthenticated, formController.createForm);
 
 /**
  * @swagger
- * /forms:
+ * /api/forms:
  *   get:
- *     summary: Get all forms
- *     tags: [Forms]
+ *     summary: Get all forms for the authenticated user
+ *     description: Retrieve all forms for the authenticated user
+ *     tags:
+ *       - Forms
+ *     security:
+ *       - bearerAuth: []
  *     responses:
- *       200:
- *         description: List of all forms
+ *       '200':
+ *         description: A list of forms
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   title:
- *                     type: string
- *                   description:
- *                     type: string
- *                   project:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       name:
- *                         type: string
- *                   user:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       name:
- *                         type: string
- *       500:
- *         description: Server error
+ *                 $ref: '#/components/schemas/Form'
+ *       '401':
+ *         description: Unauthorized
+ *       '500':
+ *         description: Internal Server Error
  */
-router.get('/', formController.getAllForms);
+router.get('/', ensureAuthenticated, async (req, res) => {
+    try {
+        const userId = req.userId;
+        const forms = await prisma.form.findMany({
+            where: { userId: userId },
+            include: { project: true, submissions: true },
+        });
 
+        res.json(forms);
+    } catch (error) {
+        console.error('Error fetching forms:', error);
+        res.status(500).json({ error: 'Failed to fetch forms' });
+    }
+});
 
 /**
  * @swagger
- * /forms/{id}:
+ * /api/forms/{id}:
  *   get:
- *     summary: Get a form by ID
- *     tags: [Forms]
+ *     summary: Get a specific form by ID for the authenticated user
+ *     description: Retrieve a specific form by ID for the authenticated user
+ *     tags:
+ *       - Forms
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
+ *         description: Form ID
  *         required: true
  *         schema:
  *           type: integer
- *         description: The ID of the form
  *     responses:
- *       200:
- *         description: Form data
+ *       '200':
+ *         description: Form details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Form'
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ *       '404':
+ *         description: Not Found
+ *       '500':
+ *         description: Internal Server Error
+ */
+router.get('/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.userId;
+
+        const form = await prisma.form.findUnique({
+            where: { id: parseInt(id) },
+            include: { project: true, submissions: true },
+        });
+
+        if (!form) {
+            return res.status(404).json({ error: 'Form not found' });
+        }
+
+        if (form.userId !== userId) {
+            return res.status(403).json({ error: 'User not authorized to access this form' });
+        }
+
+        res.json(form);
+    } catch (error) {
+        console.error('Error fetching form:', error);
+        res.status(500).json({ error: 'Failed to fetch form' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/forms/{id}:
+ *   put:
+ *     summary: Update a specific form by ID for the authenticated user
+ *     description: Update a specific form by ID for the authenticated user
+ *     tags:
+ *       - Forms
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: Form ID
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       description: Updated form data
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/FormInput'
+ *     responses:
+ *       '200':
+ *         description: Form updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Form'
+ *       '400':
+ *         description: Bad Request
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ *       '404':
+ *         description: Not Found
+ *       '500':
+ *         description: Internal Server Error
+ */
+router.put('/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { title, description, fields } = req.body;
+        const userId = req.userId;
+
+        // Fetch the form to check ownership
+        const form = await prisma.form.findUnique({
+            where: { id: parseInt(id) },
+            include: { project: true },
+        });
+
+        if (!form) {
+            return res.status(404).json({ error: 'Form not found' });
+        }
+
+        if (form.userId !== userId) {
+            return res.status(403).json({ error: 'User not authorized to update this form' });
+        }
+
+        // Update the form
+        const updatedForm = await prisma.form.update({
+            where: { id: parseInt(id) },
+            data: {
+                title: title || form.title,
+                description: description || form.description,
+                fields: fields || form.fields,
+            },
+            include: { project: true },
+        });
+
+        res.json(updatedForm);
+    } catch (error) {
+        console.error('Error updating form:', error);
+        res.status(500).json({ error: 'Failed to update form' });
+    }
+});
+
+/**
+ * @swagger
+ * /api/forms/{id}:
+ *   delete:
+ *     summary: Delete a specific form by ID for the authenticated user
+ *     description: Delete a specific form by ID for the authenticated user
+ *     tags:
+ *       - Forms
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: Form ID
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       '200':
+ *         description: Form deleted successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 id:
- *                   type: integer
- *                 title:
+ *                 message:
  *                   type: string
- *                 description:
- *                   type: string
- *                 project:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     name:
- *                       type: string
- *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     name:
- *                       type: string
- *       404:
- *         description: Form not found
- *       500:
- *         description: Server error
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ *       '404':
+ *         description: Not Found
+ *       '500':
+ *         description: Internal Server Error
  */
-router.get('/:id', formController.getFormById);
+router.delete('/:id', ensureAuthenticated, async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.userId;
 
-/**
- * @swagger
- * /forms/{id}:
- *   put:
- *     summary: Update a form by ID
- *     tags: [Forms]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *         description: The ID of the form to update
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               title:
- *                 type: string
- *                 description: The updated title of the form
- *               description:
- *                 type: string
- *                 description: The updated description of the form
- *     responses:
- *       200:
- *         description: Form updated successfully
- *       404:
- *         description: Form not found
- *       500:
- *         description: Server error
- */
-router.put('/:id', formController.updateForm);
+        // Fetch the form to check ownership
+        const form = await prisma.form.findUnique({
+            where: { id: parseInt(id) },
+        });
 
-/**
- * @swagger
- * /forms/{id}:
- *   delete:
- *     summary: Delete a form by ID
- *     tags: [Forms]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: The ID of the form to delete
- *     responses:
- *       200:
- *         description: Form deleted successfully
- *       404:
- *         description: Form not found
- *       500:
- *         description: Server error
- */
-router.delete('/:id', formController.deleteForm);
+        if (!form) {
+            return res.status(404).json({ error: 'Form not found' });
+        }
+
+        if (form.userId !== userId) {
+            return res.status(403).json({ error: 'User not authorized to delete this form' });
+        }
+
+        // Delete the form
+        await prisma.form.delete({
+            where: { id: parseInt(id) },
+        });
+
+        res.json({ message: 'Form deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting form:', error);
+        res.status(500).json({ error: 'Failed to delete form' });
+    }
+});
 
 module.exports = router;

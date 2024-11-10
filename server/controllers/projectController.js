@@ -1,33 +1,40 @@
+// controllers/projectController.js
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
 
 // Create a new Project
 exports.createProject = async (req, res) => {
     try {
-        const { name, formTitle, formDescription } = req.body;
+        const { name, description } = req.body;
         const userId = req.userId; // Assuming userId is set by the authentication middleware
 
-        // Create the project with an optional form if provided
+        // Simple validation
+        if (!name) {
+            return res.status(400).json({ error: 'Project name is required' });
+        }
+
+        // Create the project
         const project = await prisma.project.create({
             data: {
                 name,
+                description,
                 users: {
                     connect: { id: userId },
                 },
-                form: formTitle
-                    ? {
-                        create: {
-                            title: formTitle,
-                            description: formDescription,
-                            userId: userId,
-                        },
-                    }
-                    : undefined,
+                manager: {
+                    connect: { id: userId }, // Assuming the creator is the manager
+                },
+            },
+            include: {
+                users: true,
+                manager: true,
+                forms: true,
             },
         });
 
         res.status(201).json(project);
     } catch (error) {
+        console.error('Error creating project:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -46,7 +53,7 @@ exports.getAllProjects = async (req, res) => {
                 },
             },
             include: {
-                form: true,
+                forms: true,
                 users: true,
                 manager: true,
             },
@@ -54,6 +61,7 @@ exports.getAllProjects = async (req, res) => {
 
         res.json(projects);
     } catch (error) {
+        console.error('Error fetching projects:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -67,7 +75,7 @@ exports.getProjectById = async (req, res) => {
         const project = await prisma.project.findUnique({
             where: { id: parseInt(id) },
             include: {
-                form: true,
+                forms: true,
                 users: true,
                 manager: true,
             },
@@ -85,6 +93,7 @@ exports.getProjectById = async (req, res) => {
 
         res.json(project);
     } catch (error) {
+        console.error('Error fetching project:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -93,7 +102,7 @@ exports.getProjectById = async (req, res) => {
 exports.updateProject = async (req, res) => {
     try {
         const { id } = req.params;
-        const { name, formTitle, formDescription } = req.body;
+        const { name, description } = req.body;
         const userId = req.userId;
 
         // Fetch the project to check ownership
@@ -116,29 +125,19 @@ exports.updateProject = async (req, res) => {
         const updatedProject = await prisma.project.update({
             where: { id: parseInt(id) },
             data: {
-                name,
-                form: formTitle || formDescription
-                    ? {
-                        upsert: {
-                            create: {
-                                title: formTitle,
-                                description: formDescription,
-                            },
-                            update: {
-                                title: formTitle,
-                                description: formDescription,
-                            },
-                        },
-                    }
-                    : undefined,
+                name: name || project.name,
+                description: description || project.description,
             },
             include: {
-                form: true,
+                forms: true,
+                users: true,
+                manager: true,
             },
         });
 
         res.json(updatedProject);
     } catch (error) {
+        console.error('Error updating project:', error);
         res.status(500).json({ error: error.message });
     }
 };
@@ -165,13 +164,14 @@ exports.deleteProject = async (req, res) => {
             return res.status(403).json({ error: 'User not authorized to delete this project' });
         }
 
-        // Delete the project
+        // Delete the project (and cascade delete forms if configured in Prisma)
         await prisma.project.delete({
             where: { id: parseInt(id) },
         });
 
         res.json({ message: 'Project deleted successfully' });
     } catch (error) {
+        console.error('Error deleting project:', error);
         res.status(500).json({ error: error.message });
     }
 };

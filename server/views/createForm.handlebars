@@ -1,0 +1,84 @@
+<!-- views/createForm.handlebars -->
+
+{{!-- This template uses the default 'main' layout --}}
+
+<h2>Create New Form</h2>
+
+<form action="/api/forms" method="POST">
+    <div class="mb-3">
+        <label for="title" class="form-label">Form Title</label>
+        <input type="text" class="form-control" id="title" name="title" required
+               placeholder="Enter form title" value="{{title}}">
+    </div>
+    <div class="mb-3">
+        <label for="description" class="form-label">Form Description</label>
+        <textarea class="form-control" id="description" name="description" rows="3"
+                  placeholder="Enter form description">{{description}}</textarea>
+    </div>
+    <div class="mb-3">
+        <label for="projectId" class="form-label">Associate with Project</label>
+        <select class="form-select" id="projectId" name="projectId" required>
+            <option value="">Select a project</option>
+            {{#each projects}}
+                <option value="{{this.id}}">{{this.name}}</option>
+            {{/each}}
+        </select>
+    </div>
+    <hr>
+    <h4>Form Fields</h4>
+    <div id="form-fields">
+        <!-- Dynamic form fields will be added here -->
+    </div>
+    <button type="button" class="btn btn-secondary mb-3" onclick="addField()">Add Field</button>
+    <br>
+    <button type="submit" class="btn btn-primary">Create Form</button>
+</form>
+
+<script>
+    let fieldCount = 0;
+
+    function addField() {
+        fieldCount++;
+        const fieldHTML = `
+            <div class="card mb-3" id="field-${fieldCount}">
+                <div class="card-body">
+                    <h5 class="card-title">Field ${fieldCount}</h5>
+                    <div class="mb-3">
+                        <label for="fields[${fieldCount}][name]" class="form-label">Field Name</label>
+                        <input type="text" class="form-control" name="fields[${fieldCount}][name]" required
+                               placeholder="e.g., email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="fields[${fieldCount}][label]" class="form-label">Field Label</label>
+                        <input type="text" class="form-control" name="fields[${fieldCount}][label]" required
+                               placeholder="e.g., Your Email">
+                    </div>
+                    <div class="mb-3">
+                        <label for="fields[${fieldCount}][type]" class="form-label">Field Type</label>
+                        <select class="form-select" name="fields[${fieldCount}][type]" required>
+                            <option value="text">Text</option>
+                            <option value="email">Email</option>
+                            <option value="textarea">Textarea</option>
+                            <option value="number">Number</option>
+                            <option value="date">Date</option>
+                            <!-- Add more field types as needed -->
+                        </select>
+                    </div>
+                    <div class="mb-3 form-check">
+                        <input type="checkbox" class="form-check-input" name="fields[${fieldCount}][required]" value="true">
+                        <label class="form-check-label">Required</label>
+                    </div>
+                    <button type="button" class="btn btn-danger btn-sm" onclick="removeField(${fieldCount})">Remove Field</button>
+                </div>
+            </div>
+        `;
+        document.getElementById('form-fields').insertAdjacentHTML('beforeend', fieldHTML);
+    }
+
+    function removeField(id) {
+        const field = document.getElementById(`field-${id}`);
+        if (field) {
+            field.remove();
+        }
+    }
+</script>

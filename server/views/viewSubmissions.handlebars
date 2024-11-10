@@ -1,0 +1,35 @@
+<!-- views/viewSubmissions.handlebars -->
+
+<h2>Submissions for "{{form.title}}"</h2>
+<p>{{form.description}}</p>
+
+<table class="table table-striped">
+    <thead>
+    <tr>
+        <th>#</th>
+        {{#each form.fields}}
+            <th>{{this.label}}</th>
+        {{/each}}
+        <th>Submitted At</th>
+    </tr>
+    </thead>
+    <tbody>
+    {{#if submissions.length}}
+        {{#each submissions}}
+            <tr>
+                <td>{{@index}}</td>
+                {{#each ../form.fields}}
+                    <td>{{lookup ../data this.name}}</td>
+                {{/each}}
+                <td>{{formatDate this.submittedAt}}</td>
+            </tr>
+        {{/each}}
+    {{else}}
+        <tr>
+            <td colspan="{{add ../form.fields.length 2}}" class="text-center">No submissions yet.</td>
+        </tr>
+    {{/if}}
+    </tbody>
+</table>
+
+<a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>

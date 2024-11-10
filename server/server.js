@@ -8,13 +8,36 @@ const loadRoutes = require('./routes/index');
 const path = require('path');
 const flash = require('connect-flash');
 const PgSession = require('connect-pg-simple')(session);
+const morgan = require('morgan');
+const methodOverride = require('method-override');
+const exphbs = require('express-handlebars'); // Import express-handlebars
 
 const app = express();
 const port = process.env.PORT || 5000;
 
-// Set EJS as the view engine
-app.set("view engine", "ejs");
+const setUserId = require('./middleware/setUserId');
+
+app.use(morgan('combined'));
+
+const moment = require('moment'); // For date formatting
+
+app.engine('handlebars', exphbs.engine({
+    defaultLayout: 'main', // Specify default layout
+    layoutsDir: path.join(__dirname, 'views', 'layouts'), // Layouts directory
+    partialsDir: path.join(__dirname, 'views', 'partials'), // Partials directory
+    helpers: {
+        formatDate: function (date) {
+            return moment(date).format('MMMM Do YYYY, h:mm:ss a');
+        },
+        add: function (a, b) {
+            return a + b;
+        }
+    }
+}));
+
+app.set('view engine', 'handlebars');
 app.set("views", path.join(__dirname, "views"));
+
 console.log(process.env.CLIENT_ORIGIN);
 // CORS options
 const corsOptions = {
@@ -29,7 +52,9 @@ app.use((req, res, next) => {
   next();
 });
 
+
 // Middleware
+app.use(methodOverride('_method')); // Add this line
 app.use(cors(corsOptions));
 app.use(express.json()); // Body parser for JSON
 app.use(express.urlencoded({ extended: true })); // Body parser for URL-encoded data
@@ -47,7 +72,15 @@ app.use(
         },
     })
 );
-
+app.use((req, res, next) => {
+    if (req.path.match(/^\/api\/forms\/\d+\/submissions$/) && req.method === 'POST') {
+        // Allow all origins for form submissions
+        res.header('Access-Control-Allow-Origin', '*');
+        res.header('Access-Control-Allow-Methods', 'POST');
+        res.header('Access-Control-Allow-Headers', 'Content-Type');
+    }
+    next();
+});
 // Session middleware configuration
 app.use(
   session({
@@ -57,7 +90,6 @@ app.use(
     cookie: { secure: false }, // Use true for HTTPS
   })
 );
-
 // Flash messages
 app.use(flash());
 app.use((req, res, next) => {
@@ -71,6 +103,7 @@ app.use((req, res, next) => {
 // Passport middleware (make sure this is after session middleware)
 app.use(passport.initialize());
 app.use(passport.session());
+app.use(setUserId);
 
 // Import and use centralized routes after initializing Passport
 loadRoutes(app);

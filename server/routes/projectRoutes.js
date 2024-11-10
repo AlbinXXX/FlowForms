@@ -1,182 +1,185 @@
+
+// routes/projectRoutes.js
+
 const express = require('express');
 const router = express.Router();
 const projectController = require('../controllers/projectController');
+const { ensureAuthenticated } = require('../middleware/authMiddleware');
 
 /**
  * @swagger
- * tags:
- *   name: Projects
- *   description: API for managing projects
- */
-
-/**
- * @swagger
- * /projects:
+ * /api/projects/add:
  *   post:
- *     summary: Create a new project
- *     tags: [Projects]
+ *     summary: Add a new project
+ *     description: Create a new project for the authenticated user
+ *     tags:
+ *       - Projects
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
+ *       description: Project data
  *       required: true
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 description: The name of the project
- *               userId:
- *                 type: integer
- *                 description: The ID of the user associated with the project
- *               formTitle:
- *                 type: string
- *                 description: Title of the form associated with the project
- *               formDescription:
- *                 type: string
- *                 description: Description of the form associated with the project
+ *             $ref: '#/components/schemas/ProjectInput'
  *     responses:
- *       201:
+ *       '201':
  *         description: Project created successfully
- *       500:
- *         description: Server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Project'
+ *       '400':
+ *         description: Bad Request
+ *       '401':
+ *         description: Unauthorized
+ *       '500':
+ *         description: Internal Server Error
  */
-router.post('/', projectController.createProject);
+router.post('/add', ensureAuthenticated, projectController.createProject);
 
 /**
  * @swagger
- * /projects:
+ * /api/projects:
  *   get:
- *     summary: Get all projects
- *     tags: [Projects]
+ *     summary: Get all projects for the authenticated user
+ *     description: Retrieve all projects for the authenticated user
+ *     tags:
+ *       - Projects
+ *     security:
+ *       - bearerAuth: []
  *     responses:
- *       200:
- *         description: List of all projects
+ *       '200':
+ *         description: A list of projects
  *         content:
  *           application/json:
  *             schema:
  *               type: array
  *               items:
- *                 type: object
- *                 properties:
- *                   id:
- *                     type: integer
- *                   name:
- *                     type: string
- *                   form:
- *                     type: object
- *                     properties:
- *                       id:
- *                         type: integer
- *                       title:
- *                         type: string
- *                       description:
- *                         type: string
- *       500:
- *         description: Server error
+ *                 $ref: '#/components/schemas/Project'
+ *       '401':
+ *         description: Unauthorized
+ *       '500':
+ *         description: Internal Server Error
  */
-router.get('/', projectController.getAllProjects);
+router.get('/', ensureAuthenticated, projectController.getAllProjects);
 
 /**
  * @swagger
- * /projects/{id}:
+ * /api/projects/{id}:
  *   get:
- *     summary: Get a project by ID
- *     tags: [Projects]
+ *     summary: Get a specific project by ID for the authenticated user
+ *     description: Retrieve a specific project by ID for the authenticated user
+ *     tags:
+ *       - Projects
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
- *       - in: path
- *         name: id
+ *       - name: id
+ *         in: path
+ *         description: Project ID
  *         required: true
  *         schema:
  *           type: integer
- *         description: The ID of the project
  *     responses:
- *       200:
- *         description: Project data
+ *       '200':
+ *         description: Project details
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Project'
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ *       '404':
+ *         description: Not Found
+ *       '500':
+ *         description: Internal Server Error
+ */
+router.get('/:id', ensureAuthenticated, projectController.getProjectById);
+
+/**
+ * @swagger
+ * /api/projects/{id}:
+ *   put:
+ *     summary: Update a specific project by ID for the authenticated user
+ *     description: Update a specific project by ID for the authenticated user
+ *     tags:
+ *       - Projects
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: Project ID
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     requestBody:
+ *       description: Updated project data
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             $ref: '#/components/schemas/ProjectInput'
+ *     responses:
+ *       '200':
+ *         description: Project updated successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Project'
+ *       '400':
+ *         description: Bad Request
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ *       '404':
+ *         description: Not Found
+ *       '500':
+ *         description: Internal Server Error
+ */
+router.put('/:id', ensureAuthenticated, projectController.updateProject);
+
+/**
+ * @swagger
+ * /api/projects/{id}:
+ *   delete:
+ *     summary: Delete a specific project by ID for the authenticated user
+ *     description: Delete a specific project by ID for the authenticated user
+ *     tags:
+ *       - Projects
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - name: id
+ *         in: path
+ *         description: Project ID
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       '200':
+ *         description: Project deleted successfully
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 id:
- *                   type: integer
- *                 name:
+ *                 message:
  *                   type: string
- *                 form:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: integer
- *                     title:
- *                       type: string
- *                     description:
- *                       type: string
- *       404:
- *         description: Project not found
- *       500:
- *         description: Server error
+ *       '401':
+ *         description: Unauthorized
+ *       '403':
+ *         description: Forbidden
+ *       '404':
+ *         description: Not Found
+ *       '500':
+ *         description: Internal Server Error
  */
-router.get('/:id', projectController.getProjectById);
-
-/**
- * @swagger
- * /projects/{id}:
- *   put:
- *     summary: Update a project by ID
- *     tags: [Projects]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: The ID of the project to update
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *                 description: The updated name of the project
- *               formTitle:
- *                 type: string
- *                 description: The updated title of the form
- *               formDescription:
- *                 type: string
- *                 description: The updated description of the form
- *     responses:
- *       200:
- *         description: Project updated successfully
- *       404:
- *         description: Project not found
- *       500:
- *         description: Server error
- */
-router.put('/:id', projectController.updateProject);
-
-/**
- * @swagger
- * /projects/{id}:
- *   delete:
- *     summary: Delete a project by ID
- *     tags: [Projects]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema:
- *           type: integer
- *         description: The ID of the project to delete
- *     responses:
- *       200:
- *         description: Project deleted successfully
- *       404:
- *         description: Project not found
- *       500:
- *         description: Server error
- */
-router.delete('/:id', projectController.deleteProject);
+router.delete('/:id', ensureAuthenticated, projectController.deleteProject);
 
 module.exports = router;
