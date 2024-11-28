@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 import { Button } from "../components/ui/button";
-export default function NotFound() {
+
+export default function InternalError() {
   return (
     <div className="w-full grid grid-rows-[auto_1fr_auto] h-screen bg-black dark text-foreground">
       <div className="p-4 pt-8 border-b">
@@ -56,9 +57,9 @@ export default function NotFound() {
       </div>
       <div className="w-full flex justify-center items-center flex-col">
         <div className="my-6 space-y-5">
-          <h1 className="text-8xl font-extrabold text-center">404</h1>
+          <h1 className="text-8xl font-extrabold text-center">500</h1>
           <p className="text-2xl font-semibold ">
-            Looks like this page doesn't exist. Let’s get you back on track!
+            Our servers are taking a coffee break. We'll be back soon!
           </p>
         </div>
         <Button>
