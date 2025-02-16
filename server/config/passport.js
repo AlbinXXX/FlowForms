@@ -2,7 +2,7 @@ const { PrismaClient } = require('@prisma/client');
 const passport = require('passport');
 const LocalStrategy = require('passport-local').Strategy;
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 const prisma = new PrismaClient();
 
