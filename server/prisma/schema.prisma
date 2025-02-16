@@ -44,25 +44,27 @@ model Form {
   id          Int          @id @default(autoincrement())
   title       String
   description String?
-  fields      Json? // Made optional
-  token       String?      @unique
-  project     Project?     @relation("ProjectForm", fields: [projectId], references: [id])
-  user        User?        @relation("UserForms", fields: [userId], references: [id])
-  userId      Int?
+  fields      Json?
+  token       String       @unique // Now mandatory
+  // The project is required
+  projectId   Int
+  project     Project      @relation("ProjectForm", fields: [projectId], references: [id])
+  // The user is required
+  userId      Int
+  user        User         @relation("UserForms", fields: [userId], references: [id])
   submissions Submission[]
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
-  projectId   Int?
 }
 
 model Submission {
   id          Int      @id @default(autoincrement())
   formId      Int
   form        Form     @relation(fields: [formId], references: [id])
-  data        Json? // Store submission data as a JSON object
+  data        Json?
   submittedAt DateTime @default(now())
-  User        User?    @relation(fields: [userId], references: [id])
   userId      Int?
+  User        User?    @relation(fields: [userId], references: [id])
 }
 
 model Session {

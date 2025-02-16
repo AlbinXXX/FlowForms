@@ -2,28 +2,29 @@
 
 const express = require('express');
 const router = express.Router();
-const formController = require('../controllers/formController'); // Controller for form operations
-const { ensureAuthenticated } = require('../middleware/authMiddleware'); // Middleware to protect routes
+const formController = require('../controllers/formController');
+const { ensureAuthenticated } = require('../middleware/authMiddleware');
 
 /**
  * @swagger
  * /forms/create:
  *   get:
  *     summary: Render the Create New Form page
- *     description: Render the Create New Form page
+ *     description: Renders the HTML page that allows an authenticated user to create a new form.
+ *                  The page requires a form title, description, and project association (no user-defined fields).
  *     tags:
  *       - View Forms
  *     security:
  *       - bearerAuth: []
  *     responses:
- *       '200':
- *         description: HTML content of the create form page
+ *       200:
+ *         description: The HTML page for creating a form.
  *         content:
  *           text/html:
  *             schema:
  *               type: string
- *       '401':
- *         description: Unauthorized
+ *       401:
+ *         description: Unauthorized access.
  */
 router.get('/create', ensureAuthenticated, formController.renderCreateForm);
 
@@ -31,21 +32,24 @@ router.get('/create', ensureAuthenticated, formController.renderCreateForm);
  * @swagger
  * /forms/dashboard:
  *   get:
- *     summary: Render the User Dashboard showing all forms and projects
- *     description: Render the User Dashboard showing all forms and projects
+ *     summary: Render the User Dashboard
+ *     description: Renders the HTML dashboard page for an authenticated user, showing:
+ *                  - The user's email
+ *                  - List of projects
+ *                  - List of forms (with submission endpoint URLs)
  *     tags:
  *       - View Forms
  *     security:
  *       - bearerAuth: []
  *     responses:
- *       '200':
- *         description: HTML content of the dashboard page
+ *       200:
+ *         description: The HTML dashboard page.
  *         content:
  *           text/html:
  *             schema:
  *               type: string
- *       '401':
- *         description: Unauthorized
+ *       401:
+ *         description: Unauthorized access.
  */
 router.get('/dashboard', ensureAuthenticated, formController.renderDashboard);
 
@@ -54,31 +58,31 @@ router.get('/dashboard', ensureAuthenticated, formController.renderDashboard);
  * /forms/{id}/submissions:
  *   get:
  *     summary: Render the Submissions page for a specific form
- *     description: Render the Submissions page for a specific form
+ *     description: Shows all submissions for the specified form, only accessible by the form owner.
  *     tags:
  *       - View Forms
  *     security:
  *       - bearerAuth: []
  *     parameters:
- *       - name: id
- *         in: path
- *         description: Form ID
+ *       - in: path
+ *         name: id
  *         required: true
+ *         description: The ID of the form.
  *         schema:
  *           type: integer
  *     responses:
- *       '200':
- *         description: HTML content of the submissions page
+ *       200:
+ *         description: The HTML page displaying submissions for the form.
  *         content:
  *           text/html:
  *             schema:
  *               type: string
- *       '401':
- *         description: Unauthorized
- *       '403':
- *         description: Forbidden
- *       '404':
- *         description: Not Found
+ *       401:
+ *         description: Unauthorized access.
+ *       403:
+ *         description: Forbidden access.
+ *       404:
+ *         description: Form not found.
  */
 router.get('/:id/submissions', ensureAuthenticated, formController.renderViewSubmissions);
 
@@ -86,33 +90,29 @@ router.get('/:id/submissions', ensureAuthenticated, formController.renderViewSub
  * @swagger
  * /forms/{id}/embed:
  *   get:
- *     summary: Render the Embeddable Form for a specific form
- *     description: Render the Embeddable Form for a specific form
+ *     summary: Render the Embeddable Form
+ *     description: Renders an HTML page for embedding the form in external websites.
+ *                  This page displays the form for submission. Note: The form does not include predefined fields
+ *                  since submissions are accepted as arbitrary JSON.
  *     tags:
  *       - View Forms
  *     parameters:
- *       - name: id
- *         in: path
- *         description: Form ID
+ *       - in: path
+ *         name: id
  *         required: true
+ *         description: The ID of the form to embed.
  *         schema:
  *           type: integer
  *     responses:
- *       '200':
- *         description: HTML content of the embeddable form
+ *       200:
+ *         description: The embeddable HTML form.
  *         content:
  *           text/html:
  *             schema:
  *               type: string
- *       '404':
- *         description: Not Found
+ *       404:
+ *         description: Form not found.
  */
 router.get('/:id/embed', formController.renderEmbeddableForm);
-
-/**
- * Additional View Routes can be added here following the same pattern
- * Example:
- * router.get('/:id/edit', ensureAuthenticated, formController.renderEditForm);
- */
 
 module.exports = router;

@@ -1,8 +1,6 @@
 <!-- views/dashboard.handlebars -->
 
-{{!-- This template uses the default 'main' layout --}}
-
-<h2>Welcome, {{user.name}}!</h2>
+<h2>Welcome, {{user.email}}!</h2>
 
 <div class="mb-4">
     <a href="/forms/create" class="btn btn-success">Create New Form</a>
@@ -54,6 +52,7 @@
             <th>Form Title</th>
             <th>Project</th>
             <th>Created At</th>
+            <th>Submission Endpoint</th>
             <th>Actions</th>
         </tr>
         </thead>
@@ -63,6 +62,13 @@
                 <td>{{this.title}}</td>
                 <td>{{this.project.name}}</td>
                 <td>{{formatDate this.createdAt}}</td>
+                <td>
+                    {{#if this.submissionUrl}}
+                        <a href="{{this.submissionUrl}}" target="_blank">{{this.submissionUrl}}</a>
+                    {{else}}
+                        Not generated
+                    {{/if}}
+                </td>
                 <td>
                     <a href="/forms/{{this.id}}/submissions" class="btn btn-info btn-sm">View Submissions</a>
                     <a href="/forms/{{this.id}}/embed" class="btn btn-secondary btn-sm" target="_blank">Embed Form</a>
